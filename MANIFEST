@@ -1,0 +1,11 @@
+Changes
+MANIFEST
+Makefile.PL
+pln.pm
+test.pl
+examples/t1
+examples/divideFrases
+examples/divideSilabas
+examples/exemplo
+examples/printNP
+examples/refnp

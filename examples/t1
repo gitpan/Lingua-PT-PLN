@@ -1,0 +1,9 @@
+#!/usr/bin/perl
+use locale;
+use pt::pln;
+
+$/ = '';
+
+while(<>){
+  print forPNstring(sub{uc($_[0])}, $_);
+}

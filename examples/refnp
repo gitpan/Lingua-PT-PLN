@@ -1,0 +1,31 @@
+#!/usr/bin/perl
+
+use pt::pln;
+use locale;
+
+@a=qw(local rua pessoa entidade empresa festividade) ;
+$menu = join(" ", map { ++$i . $_ } @a) ;
+$sep="---------------------\n";
+  
+$f = sub{
+  my $a=shift;
+  my $ctx=shift;
+  my $r;
+  my $old = $/;
+  $/ = "\n";
+  print F "$sep$ctx$a\n $menu ?\n";
+  my $aux = <F> ;
+  chomp $aux ;
+  if ($aux){ 
+       my $tag =  ( $aux =~ /^[0-9]/) ? $a[$aux-1] : $aux;
+       $Desc{$a} = $tag ;
+       $r="<ref t='$tag'>$a</ref>";}
+  else { $r=$a; }
+  print F "$r\n"; 
+  $/=$old;
+  $r
+}
+
+open( F, "+>/dev/tty" ) ;
+forPN( $f);
+close F;
