@@ -1,22 +1,31 @@
 # -*- cperl -*-
 
 use Test::More tests => 1 + 10;
+use locale;
 use Lingua::PT::PLN;
 
-$/ = "\n\n";
+$a = 'à';
 
-my $input = "";
-my $output = "";
-open T, "t/tokenizer" or die "Cannot open tests file";
-while(<T>) {
-  chomp($input = <T>);
-  chomp($output = <T>);
+SKIP: {
+  skip "not a good locale", 4 unless $a =~ m!^\w$!;
 
 
-  my $tok2 = tokenize($input); # Braga
-  is($tok2, $output);
+  $/ = "\n\n";
+
+
+  my $input = "";
+  my $output = "";
+  open T, "t/tokenizer" or die "Cannot open tests file";
+  while(<T>) {
+    chomp($input = <T>);
+    chomp($output = <T>);
+
+
+    my $tok2 = tokenize($input); # Braga
+    is($tok2, $output);
+  }
+  close T;
 }
-close T;
 
 
 1;

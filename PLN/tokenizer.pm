@@ -42,3 +42,9 @@ our $tab = [
 
 1;
 __END__
+
+=pod
+
+ Auxiliary data
+
+=cut
