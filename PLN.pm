@@ -15,7 +15,7 @@ our @EXPORT = qw(
 
    oco
 );
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 use locale;
 
@@ -395,11 +395,11 @@ sub printPN{
 sub accent{
   local $/ = "";           # input record separator=1 or more empty lines
   my $p=shift;
-  $p =~ s/(\w+)/ _wordaccent($1) /ge;
+  $p =~ s/(\w+)/ wordaccent($1) /ge;
   $p
 }
 
-sub _wordaccent{
+sub wordaccent{
   my $p=syllable(shift);
   for ($p){
     s/(\w*[·ÈÌÛ˙Ù‚Í„ı])/"$1/        or  # word with an accent character
@@ -752,6 +752,10 @@ Returns the phrase with the syllables separated by "|"
 
 Returns the phrase with the syllables separated by "|" and accents marked with
 the charater ".
+
+=head2 wordaccent
+
+Retuns the word splited into syllables and with the accent character marked.
 
 =head2 setabrev
 
