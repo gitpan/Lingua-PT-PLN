@@ -1,13 +1,13 @@
 # -*- cperl -*-
 
-use Test::More tests => 1 + 10;
+use Test::More tests => 11;
 use locale;
 use Lingua::PT::PLN;
 
 $a = 'à';
 
 SKIP: {
-  skip "not a good locale", 4 unless $a =~ m!^\w$!;
+  skip "not a good locale", 11 unless $a =~ m!^\w$!;
 
 
   $/ = "\n\n";
