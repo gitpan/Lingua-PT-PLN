@@ -22,8 +22,9 @@ require Exporter;
    sentences
 
    cqptokens
+   oco
 );
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 # printPN  - extrai os nomes prÛprios dum texto.
 #   -comp    junta certos nomes: Fermat + Pierre de Fermat = (Pierre de) Fermat
@@ -53,6 +54,38 @@ tambÈm amanh„ ontem embora essa nesse olhe
 primeiro simplesmente era foi È ser· s„o seja
 chama-se chamam-se subtitui resta diz salvo disse diz
 };
+
+sub oco{
+local $\ = "\n";           # set output record separator
+my $P="[.,;:?!]";          # pontuacao a contar
+my $A="[A-ZÒ—a-z·‡„‚ÁÈËÍÌÛÚıÙ˙˘˚¡¿√¬«…» Õ”“’‘⁄Ÿ€-]";
+my $I="[ \"(){}+*=<>\250\256\257\277\253\273]"; # car. a  ignorar
+my %op = ();
+my %oco=();
+ 
+if(ref($_[0]) eq "HASH"){
+  my $arg=shift;
+  %op = (%op , %$arg);}
+my (@file) = (@_); 
+for(@file){
+  open(F,"< $_") or die("cant open $_");
+  while (<F>) {
+    for (/($A+|$P+)/g){ $oco{$_}++;}
+  }
+  close F;
+}
+
+if($op{num}){ # imprime por ordem de quantidade de ocorrencias
+    if(defined $op{output}){ open(SORT,"| sort -nr > $op{output}");}
+    else                   { open(SORT,"| sort -nr");}
+    for $i (keys %oco) {print SORT "$oco{$i} $i"}
+    close SORT;} 
+elsif($op{alpha}){ # imprime ordenadamente
+    if(defined $op{output}){ open(SORT ,"> $op{output}");
+           for $i (sort keys %oco ) {print SORT  "$i $oco{$i}";}}
+    else { for $i (sort keys %oco ) {print  "$i $oco{$i}";}} }
+else {return (%oco)}
+}
 
 $prof=join("|", qw{
 astrÛlogo
@@ -276,7 +309,8 @@ sub wordaccent{
     s/(\w+\|\w+)$/"$1/  or                 # accent in 2 syllabe frm the end
     s/(\w)/"$1/;                           # accent in the only syllabe
 
-    s/"(($conso)*($vogal))/$1:/;
+    s/"(($conso)*($vogal|[yw]))/$1:/;
+    s/"//g;
 
   }
   $p
@@ -357,9 +391,9 @@ local $/ = "";           # input record separator=1 or more empty lines
       s#\b(($abrev)\.)#savit($1)#ige;
       s#($terminador)#$1</s>\n<s>#g;
       $_=loadit($_);
-      s#<s>\s*$##s;
+      s#</s>\n<s>\s*$##s;
   }
-  "<s>$par";
+  "<s>$par</s>";
 }
 
 sub sentences{
@@ -430,6 +464,7 @@ Lingua::PT::pln - Perl extension for simple natural language processing, portugu
 =head1 SYNOPSIS
 
   use Lingua::PT::pln;
+
   printPN(@options);
   printPNstring($textstrint, @options);
   forPN(sub{my ($pn, $contex)=@_;... } ) ;
@@ -439,10 +474,18 @@ Lingua::PT::pln - Perl extension for simple natural language processing, portugu
   $s = wordaccent($word);
   $s = xmlsentences($textstring);
   @s = sentences($textstring);
+  oco({num=>1,output=>"file"}, "infile1", "infile2");
+  %o = oco("infile1", "infile2");
 
   perl -MLingua::PT::pln -e cqptokens file* > out
 
 =head1 DESCRIPTION
+
+=head2 C<oco( $funref )>
+
+  oco({num=>1,output=>"f"}, f1,f2,...)
+  oco({alpha=>1,output=>"f"}, f1,f2,...)
+  %oc=oco( f1,f2,...)
 
 =head2 C<forPN( $funref )>
 

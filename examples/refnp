@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use pt::pln;
+use Lingua::PT::pln;
 use locale;
 
 @a=qw(local rua pessoa entidade empresa festividade) ;

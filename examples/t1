@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 use locale;
-use pt::pln;
+use LIngua::PT::pln;
 
 $/ = '';
 
