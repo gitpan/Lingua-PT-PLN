@@ -1,5 +1,8 @@
 Revision history for Perl extension Lingua::PT::PLN.
 
+0.06  Wed Aug 06 10:10:10 2003
+	- skip tests if not in a good locale;
+
 0.05.1 Wed Jul 30 14:40:02 2003
 	- use strict;
 	- better documentation (but still incomplete)

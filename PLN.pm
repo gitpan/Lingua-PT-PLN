@@ -15,7 +15,7 @@ our @EXPORT = qw(
 
    oco
 );
-our $VERSION = '0.05.1';
+our $VERSION = '0.06';
 
 # printPN  - extrai os nomes próprios dum texto.
 #   -comp    junta certos nomes: Fermat + Pierre de Fermat = (Pierre de) Fermat

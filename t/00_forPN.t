@@ -1,35 +1,47 @@
 # -*- cperl -*-
 
 use Test::More tests => 4;
+
+
+
+use locale;
 use Lingua::PT::PLN;
 use Data::Dumper;
 
-my $count=0;
-my %pnlist=();
-my $countD=0;
-my %pnlistD=();
+$a = 'à';
 
-forPN({in=>"t/00_oco.ex"},
-       sub{$pnlist{n($_[0])}++; $count++});
+SKIP: {
+  skip "not a good locale", 4 unless $a =~ m!^\w$!;
 
-is( $count, "322","forPN");
-is( $pnlist{Portugal}, "5","forPN");
-is( $pnlist{"Pimenta Machado"}, "4","forPN");
-is( $pnlist{"Ribeiro da Silva"}, "1","forPN");
+  my $count=0;
+  my %pnlist=();
+  my $countD=0;
+  my %pnlistD=();
 
-sub n{
- my $a=shift;
- for($a){s/\s+/ /g; s/^ //; s/ $//;}
- $a;
+  forPN({in=>"t/00_oco.ex"},
+	sub{$pnlist{n($_[0])}++; $count++});
+
+  is( $count, "322","forPN");
+  is( $pnlist{Portugal}, "5","forPN");
+  is( $pnlist{"Pimenta Machado"}, "4","forPN");
+  is( $pnlist{"Ribeiro da Silva"}, "1","forPN");
+
+  sub n{
+    my $a=shift;
+    for($a){s/\s+/ /g; s/^ //; s/ $//;}
+    $a;
+  }
 }
 1;
+
+__END__
 
 forPN({in=>"t/00_oco.ex", t=> "double", sep=> '>', out=> "___" },
       sub{"<PN>$_[0]</PN>"},
       sub{"<PN d='1'>$_[0]</PN>"});
 unlink("___");
 
-__END__
+
 
 $count=0;
 %pnlist=();
