@@ -1,5 +1,8 @@
 Revision history for Perl extension Lingua::PT::PLN.
 
+0.07  Thu Sep 30 15:24:00 2004
+	- Adicionados testes para a função de tokenização
+
 0.06  Wed Aug 06 10:10:10 2003
 	- skip tests if not in a good locale;
 

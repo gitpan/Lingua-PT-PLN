@@ -21,4 +21,10 @@ examples/ucNP
 t/00_forPN.t
 t/00_oco.ex
 t/00_oco.t
-tokenizer
+t/05_tokenizer.t
+t/tokenizer
+t/10_separa_frases.t
+pt-tokenizer
+t/pod-coverage.t
+t/pod.t
+META.yml                                 Module meta-data (added by MakeMaker)

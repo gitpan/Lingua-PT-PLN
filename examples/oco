@@ -3,7 +3,22 @@
 use Lingua::PT::PLN;
 use locale;
 
-oco({output=> "_.out1", num=> 1}, "exemplo");
-oco({output=> "_.out2", alpha=> 1}, "exemplo");
-my %oc=(oco({}, "exemplo"));
+my $filename = shift;
+
+# cria um ficheiro ordenado por ocorrências
+oco({
+     output => "$filename.out1",
+     num    => 1
+    },
+    $filename);
+
+# cria um ficheiro ordenado por texto
+oco({
+     output => "$filename.out2",
+     alpha  => 1
+    },
+    $filename);
+
+# imprime a lista de palavras ordenadas
+my %oc = (oco({}, $filename));
 print join("/",(sort keys %oc));

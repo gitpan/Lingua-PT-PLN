@@ -49,10 +49,10 @@ divsent - a perl script to mark sentences
 
 =head1 SYNOPSIS
 
- divsent  file+
- divsent stag=phrase   file+
- divsent ptag=par      file+
- divsent ftag=f        file+
+ divsent file+
+ divsent -stag=phrase   file+
+ divsent -ptag=par      file+
+ divsent -ftag=f        file+
 
 =head1 DESCRIPTION
 
@@ -82,6 +82,8 @@ C<-l>  -- Each line is a different paragraph
 J.Joao Almeira, jj@di.uminho.pt
 
 =head1 SEE ALSO
+
+Lingua::PT::PLN(3pm)
 
 perl(1).
 
