@@ -1,6 +1,6 @@
-Revision history for Perl extension ptpln.
+Revision history for Perl extension Lingua::PT::PLN.
 
 0.01  Fri Mar 30 07:35:01 2001
 	- original version; created by h2xs 1.20 with options
-		-AXcn ptpln
+		-AXcn Lingua::PT::PLN
 

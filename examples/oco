@@ -1,0 +1,9 @@
+#!/usr/bin/perl
+
+use Lingua::PT::PLN;
+use locale;
+
+oco({output=> "_.out1", num=> 1}, "exemplo");
+oco({output=> "_.out2", alpha=> 1}, "exemplo");
+my %oc=(oco({}, "exemplo"));
+print join("/",(sort keys %oc));

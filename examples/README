@@ -1,0 +1,16 @@
+divideFrases   -- bom para parágrafos separados por linhas em branco
+divideFrases2  -- usa como separador <p>
+divsent        -- junta os dois anteriores e tem vários opções extra...
+   divsent -stag=frase -ptag=par -ftag=file ... file file...
+
+divideSilabas  --
+exemplo        -- texto comprido usado para testes
+html2p         -- faz um html segmentado em frases (marcadas com p)
+oco            -- exemplos de uso da função oco (calcula n.o de ocorrências)
+printNP        -- imprime os nomes próprios e sua contagem
+refnp          -- Exemplo de uso da função fornp para colocar uma etiqueta
+  "rev" com um tipo seleccionável via menu e que no final cria também uma
+  tabela NP -> tipo chamada "ref_dict"
+ucNP           -- transforma cada NP em tudo maiúsculas
+
+tagPnWithJspell -- marcador de entidades mencionadas

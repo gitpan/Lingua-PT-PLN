@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-use Lingua::PT::pln;
+use Lingua::PT::PLN;
 
 while(<>){
   print accent($_);

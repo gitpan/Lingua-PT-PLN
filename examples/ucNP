@@ -1,9 +1,11 @@
 #!/usr/bin/perl
+use lib qw(../../../..);
 use locale;
-use LIngua::PT::pln;
+use Lingua::PT::pln;
 
 $/ = '';
 
 while(<>){
+  s/\s*\n\s*/ /g;
   print forPNstring(sub{uc($_[0])}, $_);
 }

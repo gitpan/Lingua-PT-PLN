@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+
+use jspell;
+use Lingua::PT::pln;
+use Data::Dumper;
+use locale;
+use strict;
+
+jspell_dict("port");
+my $count=0;
+my %pnlist=();
+my $countD=0;
+my %pnlistD=();
+
+my $file = shift;
+
+my %tab=();
+
+sub initTab{
+ my @pcolectiva =qw{ Direcção Administração  Comissão};
+ my @metaInst = qw{ Instituto 
+   Universidade Faculdade Escola Departamento Conservatório 
+   Sindicato Associação Federação
+   Teatro Grupo 
+   Ministério Conselho Câmara Fundo Secretaria Assembleia Centro };
+ my @pessoa = qw{ Ministro Engenheiro Doutor Presidente };
+ my @metaLug = qw{ Lugar Largo Praça Praceta Bairro Rua R. Avenida Av. };
+ my @monumento = qw{Convento Igreja Palácio Torre Museu Sé  };
+
+ @tab{@metaInst} = ("instituição") x @metaInst;
+ @tab{@pcolectiva} = ("pessoa colectiva") x @pcolectiva;
+ @tab{@pessoa} = ("pessoa") x @pessoa;
+ @tab{@metaLug} = ("Lugar") x @metaLug;
+ @tab{@monumento} = ("monumento") x @monumento;
+}
+
+initTab();
+forPN({in=>$file , sep=> '>', out=> "___" },
+        sub{my $a=shift;
+            if($a =~ /(\w+)/){
+               my $f=$1;
+               my @a=fea($f);
+               my %b = onethat({CAT => "np"}, @a);
+               if(%b){if (defined $b{SEM}){"<pn t='$b{SEM}'>$a</pn>"}
+                      else  {print STDERR "?? $a -- no SEM\n";
+                             "<pn t='$b{SEM}'>$a</pn>"}}
+               elsif(defined $tab{$f}){"<pn t='$tab{$f}'>$a</pn>"}
+               else {print STDERR "$a\n";"<pn t='?'>$a</p>"}}
+            else {"<pn t='?'>$a</p>"}
+            });
+
+
+__END__

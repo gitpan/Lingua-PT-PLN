@@ -1,6 +1,6 @@
 #!/usr/bin/perl -s
 
-use Lingua::PT::pln;
+use Lingua::PT::PLN;
 use locale;
 
 printPN("oco");
