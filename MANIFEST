@@ -1,6 +1,8 @@
 Changes
 MANIFEST
 Makefile.PL
+PLN.pm
+PLN/tokenizer.pm
 README
 examples/README
 examples/divideFrases
@@ -8,14 +10,14 @@ examples/divideFrases2
 examples/divideSilabas
 examples/divsent
 examples/exemplo
+examples/exemplo.Schuster
+examples/html2nontext
 examples/html2p
 examples/oco
 examples/printNP
 examples/refnp
 examples/tagPnWithJspell
 examples/ucNP
-PLN.pm
-PLN/tokenizer.pm
 t/00_forPN.t
 t/00_oco.ex
 t/00_oco.t

@@ -1,5 +1,9 @@
 Revision history for Perl extension Lingua::PT::PLN.
 
+0.05.1 Wed Jul 30 14:40:02 2003
+	- use strict;
+	- better documentation (but still incomplete)
+
 0.01  Fri Mar 30 07:35:01 2001
 	- original version; created by h2xs 1.20 with options
 		-AXcn Lingua::PT::PLN

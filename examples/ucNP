@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use lib qw(../../../..);
 use locale;
-use Lingua::PT::pln;
+use Lingua::PT::PLN;
 
 $/ = '';
 

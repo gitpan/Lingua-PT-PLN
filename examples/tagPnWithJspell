@@ -1,31 +1,42 @@
 #!/usr/bin/perl -w
 
 use jspell;
-use Lingua::PT::pln;
+use Lingua::PT::PLN;
 use Data::Dumper;
 use locale;
 use strict;
 
-jspell_dict("port");
-my $count=0;
+my $pt_dict = jspell::new("port");
+my $en_dict = jspell::new("eng");
+print Dumper($pt_dict);
+
+
 my %pnlist=();
-my $countD=0;
 my %pnlistD=();
 
 my $file = shift;
-
 my %tab=();
 
 sub initTab{
- my @pcolectiva =qw{ Direcção Administração  Comissão};
- my @metaInst = qw{ Instituto 
-   Universidade Faculdade Escola Departamento Conservatório 
+ my @pcolectiva =qw{ Direcção Administração  Comissão
+ };
+ my @metaInst = qw{ Instituto Fundação Instituto
+   Universidade Faculdade Escola Departamento Conservatório Academia
    Sindicato Associação Federação
    Teatro Grupo 
-   Ministério Conselho Câmara Fundo Secretaria Assembleia Centro };
- my @pessoa = qw{ Ministro Engenheiro Doutor Presidente };
- my @metaLug = qw{ Lugar Largo Praça Praceta Bairro Rua R. Avenida Av. };
- my @monumento = qw{Convento Igreja Palácio Torre Museu Sé  };
+   Ministério Conselho Câmara Fundo Secretaria Assembleia Centro 
+ };
+ my @pessoa = qw{ Ministro Engenheiro Doutor Presidente Professor Dr.
+     Director Secretário 
+     Padre Frei Papa Cónego Arcebispo Bispo Cardeal 
+     General Almirante Comandante Capitão Brigadeiro Tenente Alferes 
+     Marquês Conde Dom D. Visconde Conselheiro 
+ };
+ my @metaLug = qw{ Lugar Largo Praça Praceta Bairro Rua R. Avenida Av. 
+   Travessa Beco Urbanização Quinta Viela Estrada Calçada Rotunda Jardim 
+ };
+ my @monumento = qw{Convento Mosteiro Igreja Palácio Torre Museu Sé Fonte
+ };
 
  @tab{@metaInst} = ("instituição") x @metaInst;
  @tab{@pcolectiva} = ("pessoa colectiva") x @pcolectiva;
@@ -34,20 +45,38 @@ sub initTab{
  @tab{@monumento} = ("monumento") x @monumento;
 }
 
-initTab();
-forPN({in=>$file , sep=> '>', out=> "___" },
-        sub{my $a=shift;
-            if($a =~ /(\w+)/){
-               my $f=$1;
-               my @a=fea($f);
-               my %b = onethat({CAT => "np"}, @a);
-               if(%b){if (defined $b{SEM}){"<pn t='$b{SEM}'>$a</pn>"}
-                      else  {print STDERR "?? $a -- no SEM\n";
-                             "<pn t='$b{SEM}'>$a</pn>"}}
-               elsif(defined $tab{$f}){"<pn t='$tab{$f}'>$a</pn>"}
-               else {print STDERR "$a\n";"<pn t='?'>$a</p>"}}
-            else {"<pn t='?'>$a</p>"}
-            });
+my $procPn= sub{my $a=shift;
+    print STDERR "debud pn1($a)\n";
+    if($a =~ /(\w+)/){
+         my $f=$1;
+         my @a=$pt_dict->fea($f);
+         my %b = onethat({CAT => "np"}, @a);
+         if(%b){if (defined $b{SEM}){"<pn t='$b{SEM}'>$a</pn>"}
+                else {print STDERR "?? $a -- no SEM\n";
+                      "<pn t='np??'>$a</pn>"}}
+         elsif(defined $tab{$f}){"<pn t='$tab{$f}'>$a</pn>"}
+         else {
+            @a = $en_dict->fea($f);
+            %b = onethat({CAT => "np"}, @a);
+            if(%b){if (defined $b{SEM}){"<pn L='en' t='$b{SEM}'>$a</pn>"}
+                   else {print STDERR "?? $a -- english but no SEM\n";
+                         "<pn t='np??'>$a</pn>"}}
+            else { print STDERR "$a\n";
+               "<pn t='?'>$a</p>"}}}
+    else {"<pn t='??'>$a</p>"}
+  };
 
+my $procPn2= sub{my $a=shift;
+    print STDERR "debud pn2($a)\n";
+    if($a =~ /(\w+)/){
+         my @a=$pt_dict->fea($1);
+         my %b = onethat({CAT => "np"}, @a);
+         if(%b || scalar @a == 0){&{$procPn}($a)}
+         else{ undef ;}}
+    else {"<pn t='???'>$a</p>"}
+  };
+
+initTab();
+forPN({in=>$file, sep=> '>', out=> "___", t=>"double"}, $procPn,$procPn2);
 
 __END__

@@ -1,35 +1,21 @@
 package Lingua::PT::PLN;
 
-#
-# AAAACKK!
-# use strict;
-#
-# use vars qw($VERSION @ISA @EXPORT @EXPORT_OK);
-
+use strict;
 require Exporter;
+our @ISA = qw(Exporter AutoLoader);
 
-@ISA = qw(Exporter AutoLoader);
-@EXPORT = qw(
+our @EXPORT = qw(
+   getPN printPN printPNstring forPN forPNstring
 
-   getPN
-   printPN
-   printPNstring
-   forPN
-   forPNstring
+   syllable accent wordaccent
 
-   syllabe
-   accent
-   wordaccent
+   xmlsentences sentences
 
-   xmlsentences
-   sentences
-
-   cqptokens
-   tokenize
+   cqptokens tokenize
 
    oco
 );
-$VERSION = '0.05';
+our $VERSION = '0.05.1';
 
 # printPN  - extrai os nomes próprios dum texto.
 #   -comp    junta certos nomes: Fermat + Pierre de Fermat = (Pierre de) Fermat
@@ -38,286 +24,335 @@ $VERSION = '0.05';
 #   -em     "em Famalicão" como pertencente a PN
 use locale;
 
-my ($conso, $vogal, $np1, $np, @stopw , %vazia , $prof, $adje, $em);
+our ($consoante, $vogal, $np1, $np, @stopw , %vazia , $prof, $adje, $em, $e, $sep1, $sep2, %names, %gnames);
+
+
 BEGIN{
+  $consoante='[bcçdfghjklmñnpqrstvwyxz]';
+  $vogal='[áéíóúâêôãõàaeiou]';
 
-$conso='[bcdfghjklmñnpqrstvwyxzç]';
-$vogal='[áéíóúôâêãõàaeiou]';
+  $np1=qr{(?:(?:[A-ZÉÚÓÁÂ][.])+|[sS]r[.]|[dD]r[.]|St[oa]?[.]|[A-ZÉÚÓÁÂ]\w+(?:[\'\-]\w+)*)};
 
-$np1=qr{(?:(?:[A-ZÉÚÓÁÂ][.])+|[sS]r[.]|[dD]r[.]|St[oa]?[.]|[A-ZÉÚÓÁÂ]\w+(?:[\'\-]\w+)*)};
+  if ($e) {
+    $np= qr{$np1(?:\s+(?:d[eao]s?\s+|e\s+)?$np1)*};
+  } else {
+    $np= qr{$np1(?:\s+(?:d[eao]s?\s+)?$np1)*};
+  }
 
-if ($e){ $np= qr{$np1(?:\s+(?:d[eao]s?\s+|e\s+)?$np1)*};}
-else   { $np= qr{$np1(?:\s+(?:d[eao]s?\s+)?$np1)*};}
-
-@stopw= qw{
-no com se em segundo a o os as na nos nas do das dos da tanto
-para de desde mas quando esta sem nem só apenas mesmo até uma uns um
-pela por pelo pelas pelos depois ao sobre como umas já enquanto aos
-também amanhã ontem embora essa nesse olhe hoje não eu ele eles
-primeiro simplesmente era foi é será são seja nosso nossa nossos nossas
-chama-se chamam-se subtitui resta diz salvo disse diz vamos entra entram
-aqui começou lá seu vinham passou quanto sou vi onde este então temos
-num aquele tivemos
-};
+  @stopw = qw{
+              no com se em segundo a o os as na nos nas do das dos da tanto
+              para de desde mas quando esta sem nem só apenas mesmo até uma uns um
+              pela por pelo pelas pelos depois ao sobre como umas já enquanto aos
+              também amanhã ontem embora essa nesse olhe hoje não eu ele eles
+              primeiro simplesmente era foi é será são seja nosso nossa nossos nossas
+              chama-se chamam-se subtitui resta diz salvo disse diz vamos entra entram
+              aqui começou lá seu vinham passou quanto sou vi onde este então temos
+              num aquele tivemos
+             };
 
 
-$prof=join("|", qw{
-astrólogo
-astrónomo
-advogado
-cantor
-actor
-baterista
-compositor
-dramaturgo
-engenheiro
-escritor
-filósofo
-flautista
-físico
-investigador
-matemático
-médico
-ministro
-músico
-químico
-pianista
-poeta
-professor
-teólogo
-jogador
-});
+  $prof = join("|", qw{
+                       astrólogo astrónomo advogado actor
+                       baterista
+                       cantor compositor
+                       dramaturgo
+                       engenheiro escritor
+                       filósofo flautista físico
+                       investigador
+                       jogador
+                       matemático médico ministro músico
+                       pianista poeta professor
+                       químico
+                       teólogo
+                      });
 
-$adje=join("|", qw{
-português
-francês
-inglês
-espanhol
-internacional
-bracarence
-minhoto
-});
+  $adje = join("|", qw{
+                       português francês inglês espanhol
+                       internacional bracarence minhoto
+                      });
 
-$sep1=join("|", qw{
-chamado
-"conhecido como"
-});
+  $sep1 = join("|", qw{chamado "conhecido como"});
 
-$sep2=join("|", qw{
-brilhante
-conhecido
-reputado
-popular
-});
+  $sep2 = join("|", qw{brilhante conhecido reputado popular});
 
-@vazia{@stopw}=(@stopw);    #para ser mais facil ver se uma pal 'e vazia
-$em = '\b(?:[Ee]m|[nN][oa]s?)';
+  @vazia{@stopw} = (@stopw); # para ser mais facil ver se uma pal é stopword
+  $em = '\b(?:[Ee]m|[nN][oa]s?)';
 }
 
-sub oco{  ### {from => (file|string), num => 1, alpha => 1, output=> file}
+
+
+sub oco {
+  ### {from => (file|string), num => 1, alpha => 1, output=> file}
+
   my %opt = (from => 'file');
-  if(ref($_[0]) eq "HASH"){ %opt = (%opt , %{shift(@_)});}
-  local $\ = "\n";           # set output record separator
-  my $P="(?:[,;:?!]|[.]+|[-]+)";         # pontuacao a contar
+  %opt = (%opt , %{shift(@_)}) if ref($_[0]) eq "HASH";
+
+  local $\ = "\n";                    # set output record separator
+
+  my $P="(?:[,;:?!]|[.]+|[-]+)";      # pontuacao a contar
   my $A="[A-ZñÑa-záàãâçéèêíóòõôúùûÁÀÃÂÇÉÈÊÍÓÒÕÔÚÙÛ]";
   my $I="[ \"(){}+*=<>\250\256\257\277\253\273]"; # car. a  ignorar
   my %oco=();
 
-  if($opt{from} eq 'string'){
+  if ($opt{from} eq 'string') {
     my (@str) = (@_);
-    for(@str){
-        for (/($A+(?:['-]$A+)*|$P)/g){ $oco{$_}++;}
+    for (@str) {
+      for (/($A+(?:['-]$A+)*|$P)/g) { $oco{$_}++; }
     }
-  }
-  else {
+  } else {
     my (@file) = (@_);
-    for(@file){
-      open(F,"< $_") or die("cant open $_");
+    for(@file) {
+      open F,"< $_" or die "cant open $_: $!";
       while (<F>) {
-        for (/($A+(?:['-]$A+)*|$P)/g){ $oco{$_}++;}
+        for (/($A+(?:['-]$A+)*|$P)/g) { $oco{$_}++; }
       }
       close F;
     }
   }
 
-  if($opt{num}){ # imprime por ordem de quantidade de ocorrencias
-    if(defined $opt{output}){ open(SORT,"| sort -nr > $opt{output}");}
-    else                   { open(SORT,"| sort -nr");}
-    for $i (keys %oco) {print SORT "$oco{$i} $i"}
-    close SORT;} 
-  elsif($opt{alpha}){ # imprime ordenadamente
-    if(defined $opt{output}){ open(SORT ,"> $opt{output}");
-			     for $i (sort keys %oco ) {print SORT  "$i $oco{$i}";}}
-    else { for $i (sort keys %oco ) {print  "$i $oco{$i}";}} }
-  else {return (%oco)}
+  if ($opt{num}) { # imprime por ordem de quantidade de ocorrencias
+
+    # TODO: não é portável
+    if (defined $opt{output}) {
+      open SORT,"| sort -nr > $opt{output}"
+    } else {
+      open SORT,"| sort -nr"
+    }
+
+    for my $i (keys %oco) {
+      print SORT "$oco{$i} $i"
+    }
+    close SORT;
+
+  } elsif ($opt{alpha}) { # imprime ordenadamente
+
+    if (defined $opt{output}) {
+      open SORT ,"> $opt{output}";
+      for my $i (sort keys %oco ) {
+	print SORT  "$i $oco{$i}";
+      }
+    } else {
+      for my $i (sort keys %oco ) {
+	print  "$i $oco{$i}";
+      }
+    }
+  } else {
+    return (%oco)
+  }
 }
 
-sub forPN{ ## opt:  in=> inputfile(sdtin), out => file(stdout)
+sub forPN{
+  ## opt:  in=> inputfile(sdtin), out => file(stdout)
   my %opt = (sep => "", t => "normal" );
-  if(ref($_[0]) eq "HASH"){ %opt = (%opt , %{shift(@_)});}
+
+  %opt = (%opt , %{shift(@_)}) if ref($_[0]) eq "HASH";
+
   my $f=shift;
   my $m="\x01";
   my $f1;
   my $old;
   my $F1 ;
-  local $/ = $opt{sep};           # input record separator=1 or more empty lines
 
-  if(defined $opt{in} ){
-     open($F1,"$opt{in}") or die("cant open $opt{in}\n"); }
-  else{
-     $F1=*STDIN; }
+  local $/ = $opt{sep};  # input record separator=1 or more empty lines
 
-  if(defined $opt{out}){
-     open(F,">$opt{out}") or die("cant create $opt{out}\n");
-     $old = select(F);
+  if (defined $opt{in}) {
+    open $F1, "$opt{in}" or die "cant open $opt{in}\n";
+  } else {
+    $F1=*STDIN;
   }
 
-  die("invalid parameter") unless (ref($f) eq "CODE");
-  if($opt{t} eq "double") {
-       $f1=shift;
-       die("invalid parameter ". ref($f1) ) unless (ref($f1) eq "CODE");
+  if (defined $opt{out}) {
+    open F, ">$opt{out}" or die "cant create $opt{out}\n";
+    $old = select(F);
   }
+
+  die "invalid parameter to 'forPN'" unless ref($f) eq "CODE";
+
+  if ($opt{t} eq "double") {
+    $f1 = shift;
+    die "invalid parameter ". ref($f1) unless ref($f1) eq "CODE";
+  }
+
   while (<$F1>) {
-    $ctx=$_;
-    if($opt{t} eq "double") {
-       s{($np)}{$m($1$m)}g;
-       s{(^\s*|[-]\s+|[.!?]\s*)$m\(($np)$m\)}{ $1 . &{$f1}($2,$ctx) }ge;
-       s{$m\(($np)$m\)}{                            &{$f }($1,$ctx) }ge;
-    }
-    else { 
-       s{(\w+\s+|[«»,:()'`"]\s*)($np)}{$1 . &{$f }($2,$ctx) }ge;
+    my $ctx = $_;
+    if ($opt{t} eq "double") {
+
+      s{($np)}{$m($1$m)}g;
+      s{(^\s*|[-]\s+|[.!?]\s*)$m\(($np)$m\)}{
+	my ($aux1,$aux2,$aux3)= ($1,$2, &{$f1}($2,$ctx));
+	if   (defined($aux3)){$aux1 . $aux3}
+	else                 {$aux1 . tryright($aux2)} }ge;
+      s{$m\(($np)$m\)}{   &{$f }($1,$ctx) }ge;
+
+    } else {
+      s{(\w+\s+|[\«\»,:()'`"]\s*)($np)}{$1 . &{$f }($2,$ctx) }ge;
     }
     print;
   }
-  close($F1) if $opt{in};
-  if(defined $opt{out}){
-     select($old);
-     close(F);
+  close $F1 if $opt{in};
+  if (defined $opt{out}) {
+    select $old;
+    close F;
   }
 }
 
-sub forPNstring{
-  my $f=shift;
-  die("invalid parameter: function expected") unless (ref($f) eq "CODE");
+sub tryright{
+  my $a = shift;
+  return $a unless $a =~ /(\w+)/;
+  my $m = "\x01";
+  my ($w,$r) = ($1,$');
+  $r =~ s{($np)}{$m($1$m)}g;
+  return "$w$r";
+}
+
+
+sub forPNstring {
+  my $f = shift;
+  die "invalid parameter to 'forPNstring': function expected" unless ref($f) eq "CODE";
   my $text = shift;
   my $sep = shift || "\n";
   my $r = '';
-  for (split(/$sep/,$text)){
-    $ctx=$_;
-    s/(\w+\s+|[«»,()'`i"]\s*)($np)/$1 . &{$f}($2,$ctx)/ge       ;
+  for (split(/$sep/,$text)) {
+    my $ctx = $_;
+    s/(\w+\s+|[\«\»,()'`i"]\s*)($np)/$1 . &{$f}($2,$ctx)/ge       ;
     $r .= "$_$sep";
   }
-  $r;
+  return $r;
 }
 
 sub printPNstring{
   my $text = shift;
   my %opt = ();
-  if(ref($text) eq "HASH")    { %opt = %$text        ; $text = shift; }
+
+  if   (ref($text) eq "HASH") { %opt = %$text        ; $text = shift; }
   elsif(ref($text) eq "ARRAY"){ @opt{@$text} = @$text; $text = shift; }
 
-  my (%profissao,%names,%namesduv);
+  my (%profissao, %names, %namesduv);
 
-  for($text){
+  for ($text) {
     chop;
     s/\n/ /g;
-    for (m/[.?!:;"]\s+($np1\s+$np)/gxs)     { $namesduv{$_}++;}
-    for (m![)>(]\s*($np1\s+$np)!gxs)       { $namesduv{$_}++;}
-    for (m/(?:[\w«»,]\s+)($np)/gxs)         { $names{$_}++;}
-    if ($opt{em}) { for (/$em\s+($npxs)/g) { $gnames{$_}++;}}
+    for (m/[.?!:;"]\s+($np1\s+$np)/gxs)  { $namesduv{$_}++ }
+    for (m![)>(]\s*($np1\s+$np)!gxs)     { $namesduv{$_}++ }
+    for (m/(?:[\w\«\»,]\s+)($np)/gxs)    { $names{$_}++ }
+    if ($opt{em}) {
+      for (/$em\s+($np)/g) { $gnames{$_}++ }
+    }
     if ($opt{prof}) {
-      while(/\b($prof)\s+(?:(?:$sep1)\s+)?($np)/g)   {$profissao{$2}=$1;}
-      while(/(?:[\w«»,]\s+|[(])($np),\s*(?:(?:$sep2)\s+)?($prof)/g)
-	{$profissao{$1}=$2;}
+      while(/\b($prof)\s+(?:(?:$sep1)\s+)?($np)/g)
+	{ $profissao{$2} = $1 }
+      while(/(?:[\w\«\»,]\s+|[(])($np),\s*(?:(?:$sep2)\s+)?($prof)/g)
+	{ $profissao{$1} = $2 }
     }
   }
 
   # tratamento dos nomes "duvidosos" = Nome prop no inicio duma frase
   #
 
-  for (keys %namesduv){
-    if(/^(\w+)/ && $vazia{lc($1)} )   #exemplo "Como Jose Manuel"
-      { s/^\w+\s*//;                  # retira-se a 1.a palavra
-	$names{$_}++;}
-    else
-      { $names{$_}++;}
+  for (keys %namesduv) {
+    if (/^(\w+)/ && $vazia{lc($1)}) { #exemplo "Como Jose Manuel"
+      s/^\w+\s*//;                    # retira-se a 1.a palavra
+      $names{$_}++
+    } else { 
+      $names{$_}++
+    }
   }
 
-  for (keys %names){
-    if(/^(\w+)/ && $vazia{lc($1)} )   #exemplo "Como Jose Manuel"
-      { my $ant = $_;
-        s/^\w+\s*//;                  # retira-se a 1.a palavra
-        $names{$_}+=$names{$ant};
-        delete $names{$ant};}
+  for (keys %names) {
+    if (/^(\w+)/ && $vazia{lc($1)}) {  #exemplo "Como Jose Manuel"
+      my $ant = $_;
+      s/^\w+\s*//;                     # retira-se a 1.a palavra
+      $names{$_} += $names{$ant};
+      delete $names{$ant}
+    }
   }
 
-  if($opt{oco}){
-    for (sort {$names{$b} <=> $names{$a}} keys %names )
-      {printf("%60s - %d\n", $_ ,$names{$_});}
-  }
-  else{ if($opt{comp}){my @l = sort compara keys %names;
-                       compacta(@l); }
-        else{for (sort compara keys %names )
-               {printf("%60s - %d\n", $_ ,$names{$_});} }
-
-        if($opt{prof}){print "\nProfissões\n";
-		       for (keys %profissao){print "$_ -- $profissao{$_}";} }
-
-        if($opt{em}){print "\nGeograficos\n";
-		     for (sort compara keys %gnames )
-		       {printf("%60s - %d\n", $_ ,$gnames{$_});} }
+  if ($opt{oco}) {
+    for (sort {$names{$b} <=> $names{$a}} keys %names ) {
+      printf("%60s - %d\n", $_ ,$names{$_});
+    }
+  } else {
+    if ($opt{comp}) {
+      my @l = sort compara keys %names;
+      compacta(@l)
+    } else {
+      for (sort compara keys %names ) {
+	printf("%60s - %d\n", $_ ,$names{$_});
       }
+    }
+    if ($opt{prof}) {
+      print "\nProfissões\n";
+      for (keys %profissao) {
+	print "$_ -- $profissao{$_}"
+      }
+    }
+    if ($opt{em}) {
+      print "\nGeograficos\n";
+      for (sort compara keys %gnames ) {
+	printf("%60s - %d\n", $_ ,$gnames{$_})
+      }
+    }
+  }
 }
 
-sub getPN{
+sub getPN {
   local $/ = "";           # input record separator=1 or more empty lines
+
   my %opt;
   @opt{@_} = @_;
-  my (%profissao,%names,%namesduv);
+  my (%profissao, %names, %namesduv);
+
   while (<>) {
     chop;
     s/\n/ /g;
     for (/[.?!:;"]\s+($np1\s+$np)/g)     { $namesduv{$_}++;}
-    for (/[)>(]\s*($np1\s+$np)/g)       { $namesduv{$_}++;}
-    for (/(?:[\w«»,]\s+)($np)/g)         { $names{$_}++;}
-    if ($opt{em}) { for (/$em\s+($np)/g) { $gnames{$_}++;}}
+    for (/[)>(]\s*($np1\s+$np)/g)        { $namesduv{$_}++;}
+    for (/(?:[\w\«\»,]\s+)($np)/g)       { $names{$_}++;}
+    if ($opt{em}) {
+      for (/$em\s+($np)/g) { $gnames{$_}++;}}
     if ($opt{prof}) {
-       while(/\b($prof)\s+(?:(?:$sep1)\s+)?($np)/g)   {$profissao{$2}=$1;}
-       while(/(?:[\w«»,]\s+|[(])($np),\s*(?:(?:$sep2)\s+)?($prof)/g)
-            {$profissao{$1}=$2;}
-    }
+       while(/\b($prof)\s+(?:(?:$sep1)\s+)?($np)/g)
+	 { $profissao{$2} = $1 }
+       while(/(?:[\w\«\»,]\s+|[(])($np),\s*(?:(?:$sep2)\s+)?($prof)/g)
+	 { $profissao{$1} = $2 }
+     }
   }
 
   # tratamento dos nomes "duvidosos" = Nome prop no inicio duma frase
   #
 
-  for (keys %namesduv){
-     if(/^(\w+)/ && $vazia{lc($1)} )    # exemplo "Como Jose Manuel"
-        { s/^\w+\s*//;                  # retira-se a 1.a palavra
-          $names{$_}++;}
-     else
-        { $names{$_}++;}
-   }
-  (%names)
+  for (keys %namesduv) {
+    if(/^(\w+)/ && $vazia{lc($1)}) {  # exemplo "Como Jose Manuel"
+      s/^\w+\s*//;                    # retira-se a 1.a palavra
+      $names{$_}++
+    } else {
+      $names{$_}++
+    }
+  }
+  return (%names)
 }
 
 sub printPN{
   local $/ = "";           # input record separator=1 or more empty lines
+
   my %opt;
   @opt{@_} = @_;
-  my (%profissao,%names,%namesduv);
+  my (%profissao, %names, %namesduv);
 
   while (<>) {
     chop;
     s/\n/ /g;
-    for (/[.?!:;"]\s+($np1\s+$np)/g)     { $namesduv{$_}++;}
-    for (/[)>(]\s*($np1\s+$np)/g)       { $namesduv{$_}++;}
-    for (/(?:[\w«»,]\s+)($np)/g)         { $names{$_}++;}
-    if ($opt{em}) { for (/$em\s+($np)/g) { $gnames{$_}++;}}
+    for (/[.?!:;"]\s+($np1\s+$np)/g)     { $namesduv{$_}++ }
+    for (/[)>(]\s*($np1\s+$np)/g)        { $namesduv{$_}++ }
+    for (/(?:[\w\«\»,]\s+)($np)/g)       { $names{$_}++ }
+    if ($opt{em}) {
+      for (/$em\s+($np)/g) { $gnames{$_}++ }
+    }
     if ($opt{prof}) {
-       while(/\b($prof)\s+(?:(?:$sep1)\s+)?($np)/g)   {$profissao{$2}=$1;}
-       while(/(?:[\w«»,]\s+|[(])($np),\s*(?:(?:$sep2)\s+)?($prof)/g)
-	 {$profissao{$1}=$2;}
+       while(/\b($prof)\s+(?:(?:$sep1)\s+)?($np)/g)
+	 { $profissao{$2} = $1 }
+       while(/(?:[\w\«\»,]\s+|[(])($np),\s*(?:(?:$sep2)\s+)?($prof)/g)
+	 { $profissao{$1} = $2 }
      }
   }
 
@@ -370,15 +405,15 @@ sub accent{
 }
 
 sub wordaccent{
-  my $p=syllabe(shift);
+  my $p=syllable(shift);
   for ($p){
     s/(\w*[áéíóúôâêãõ])/"$1/        or  # word with an accent character
       s/(\w*)([ua])(ir)$/$1$2|"$3/  or  # word ending with air uir
 	s/(\w*([zlr]|[iu]s?))$/"$1/ or  # word ending with z l r i u is us
-	  s/(\w+\|\w+)$/"$1/        or  # accent in 2 syllabe frm the end
-	    s/(\w)/"$1/;                # accent in the only syllabe
+	  s/(\w+\|\w+)$/"$1/        or  # accent in 2 syllable frm the end
+	    s/(\w)/"$1/;                # accent in the only syllable
 
-    s/"(($conso)*($vogal|[yw]))/$1:/ ;
+    s/"(($consoante)*($vogal|[yw]))/$1:/ ;
     s/"qu:($vogal|[yw])/qu$1:/ ;
     s/:([áéíóúôâêãõ])/$1:/  ;
     s/"//g;
@@ -406,7 +441,7 @@ for my $pri (grep(/\d/, keys %syl)){
 
 (my $sylseppair= $syl{breakpair}) =~ s/(\w)(\w)/(\?<=($1))(\?=($2))/g;
 
-sub syllabe{
+sub syllable{
   my $p=shift;
 
   for($p){
@@ -425,6 +460,7 @@ sub compara{     # ordena pela lista de palavras invertida
 }
 
 sub compacta{
+  my $s;
   my $p = shift;
   my $r = $p;
   my $q = $names{$p};
@@ -470,6 +506,7 @@ sub xmlsentences{   ## st=> "s"
 }
 
 sub sentences{
+  my @r;
   my $MARCA="\0x01";
   my $par=shift;
   for($par){
@@ -502,8 +539,8 @@ sub tokenize{
       }
     s/<\?xml.*?\?>//s;
     s/($protect)/savit($1)/xge;
-    s/([»\]])/$1 /g;
-    s#([«\[])# $1#g;
+    s!([\»\]])!$1 !g;
+    s#([\«\[])# $1#g;
     s#\"# \" #g;
     s/(\s*\b\s*|\s+)/\n/g;
     s/(.)\n-\n/$1-/g;
@@ -538,8 +575,8 @@ sub cqptokens{        ##
         }
         s/<\?xml.*?\?>//s;
         s/($protect)/savit($1)/xge;
-	s#([»\]])#$1 #g;
-	s#([«\[])# $1#g;
+	s#([\»\]])#$1 #g;
+	s#([\«\[])# $1#g;
 	s#\"# \" #g;
  	s/(\s*\b\s*|\s+)/\n/g;
 	#s/(.)\n-\n/$1-/g;
@@ -581,22 +618,26 @@ $c1='[^»a-záéíóúâêà,;?!)]';
 
 =head1 NAME
 
-Lingua::PT::PLN - Perl extension for simple natural language processing, portuguese language
+Lingua::PT::PLN - Perl extension for simple natural language processing of the Portuguese language
 
 =head1 SYNOPSIS
 
   use Lingua::PT::PLN;
+
+  # occurrence counter
+  %o = oco("file");
+  oco({num=>1,output=>"outfile"},"file");
 
   printPN(@options);
   printPNstring({ %options... } ,$textstrint);
   printPNstring([ @options... ] ,$textstrint);
 
   forPN( sub{my ($pn, $contex)=@_;... } ) ;
-  forPN( {p=>"double"}, sub{my ($pn, $contex)=@_;... }, sub{...} ) ;
+  forPN( {t=>"double"}, sub{my ($pn, $contex)=@_;... }, sub{...} ) ;
 
   forPNstring(sub{my ($pn, $contex)=@_;... } ,$textstring, regsep) ;
 
-  $st = syllabe($phrase);
+  $st = syllable($phrase);
   $s = accent($phrase);
   $s = wordaccent($word);
 
@@ -604,28 +645,66 @@ Lingua::PT::PLN - Perl extension for simple natural language processing, portugu
   $s = xmlsentences({st=>"frase"},$textstring);
   @s = sentences($textstring);
 
-  %o = oco("infile1", "infile2");
-       oco({num=>1,output=>"file"}, "infile1", "infile2");
-  %o = oco({from=>"string"},"string1");
 
   perl -MLingua::PT::PLN -e 'cqptokens("file")' > out
 
 =head1 DESCRIPTION
 
-=head2 C<oco([options,], file*)>
+This is a module for Natural Language Processing of the Portuguese.
 
-Option C<num=1> means sorted by number of ocorrences.
+=head2 Occurrence counting: C<oco>
 
-Option C<alpha=1> means sorted lexicografically.
+Counts word occurrence from a string or a set of files. Returns an
+hash with the information or creates a sorted file with the results.
 
-Option C<output=f> means write output to f
+This function takes optionally as first argument an hash of options
+where you can specify:
 
-Option C<from="string"> means that input is a string instead of a file
+=over 4
 
-  oco({num=>1,output=>"f"}, f1,f2,...)
-  oco({alpha=>1,output=>"f"}, f1,f2,...)
-  %oc=oco( f1,f2,...)
-  %oc=oco( {from=>"string"},"text in a string")
+=item num => 1
+
+means the output should be sorted by ocurrence number;
+
+=item alpha => 1
+
+mean the output should be sorted lexicographically
+
+=item output => "f"
+
+means the output will be written to the file "f";
+
+=item from => "string"
+
+means that next argument (after the option hash) is a string which
+should be used as input for the function.
+
+=item from => "file"
+
+means that remaining arguments to the function are filenames which
+should be used as input for the function. This is the default option.
+
+=back
+
+Examples:
+
+  oco({num=>1,output=>"f"}, "f1","f2")
+  # sort by occurrence
+  # store output on file "f"
+  # process files "f1" and "f2"
+
+  oco({alpha=>1,output=>"f"}, "f1","f2")
+  # sort lexicographically
+  # store output on file "f"
+  # process files "f1" and "f2"
+
+  %oc = oco("f1","f2")
+  # return a hash with the occurrences
+  # use "f1" and "f2" as input files
+
+  %oc = oco( {from=>"string"},"text in a string")
+  # use a string as input
+  # return a hash with the occurrences
 
 =head2 C<forPN( $funref )>
 
@@ -651,13 +730,13 @@ Substitutes all C<propername> by C<funref(propername)> in the text string.
 
    printPNstring("oco")
 
-=head2 C<syllabe( $phrase )>
+=head2 C<syllable( $phrase )>
 
-Returns the phrase with the syllabes separated by "|"
+Returns the phrase with the syllables separated by "|"
 
 =head2 C<accent( $phrase )>
 
-Returns the phrase with the syllabes separated by "|" and accents marked with
+Returns the phrase with the syllables separated by "|" and accents marked with
 the charater ".
 
 =head2 C<cqptokens()>
