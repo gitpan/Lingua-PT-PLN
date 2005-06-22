@@ -1,5 +1,9 @@
 Revision history for Perl extension Lingua::PT::PLN.
 
+0.11  Wed Jun 22 11:24:00 2005
+	- Added a quick script to cound occurrences. Need more work
+	- Added 'ignorexml' to ocurrence counter;
+
 0.10  Mon Oct  4 21:24:00 2004
 	- Export a missing function
 

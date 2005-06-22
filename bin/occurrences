@@ -1,0 +1,12 @@
+#!/usr/bin/perl -w
+
+use Lingua::PT::PLN;
+
+my $file = shift;
+
+
+my %o = oco($file);
+
+for (sort { $o{$b}<=>$o{$a} } keys %o) {
+  printf("%20s %d\n",$_,$o{$_});
+}

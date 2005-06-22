@@ -14,16 +14,12 @@ examples/exemplo.Schuster
 examples/html2nontext
 examples/html2p
 examples/oco
-examples/printNP
-examples/refnp
-examples/tagPnWithJspell
-examples/ucNP
-t/00_forPN.t
 t/00_oco.ex
 t/00_oco.t
 t/05_tokenizer.t
 t/tokenizer
-pt-tokenizer
+bin/pt-tokenizer
 t/pod-coverage.t
 t/pod.t
 META.yml                                 Module meta-data (added by MakeMaker)
+bin/occurrences

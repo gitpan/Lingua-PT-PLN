@@ -5,8 +5,6 @@ require Exporter;
 our @ISA = qw(Exporter AutoLoader);
 
 our @EXPORT = qw(
-   getPN printPN printPNstring forPN forPNstring
-
    syllable accent wordaccent
 
    xmlsentences sentences
@@ -15,7 +13,7 @@ our @EXPORT = qw(
 
    oco
 );
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 use locale;
 
@@ -34,6 +32,9 @@ BEGIN {
     $np= qr{$np1(?:\s+(?:d[eao]s?\s+)?$np1)*};
   }
 
+  use POSIX;
+  POSIX::setlocale(LC_CTYPE,"pt_PT");
+
   @stopw = qw{
               no com se em segundo a o os as na nos nas do das dos da tanto
               para de desde mas quando esta sem nem só apenas mesmo até uma uns um
@@ -43,6 +44,7 @@ BEGIN {
               chama-se chamam-se subtitui resta diz salvo disse diz vamos entra entram
               aqui começou lá seu vinham passou quanto sou vi onde este então temos
               num aquele tivemos
+              the le la
              };
 
 
@@ -77,9 +79,14 @@ BEGIN {
 
 
 sub oco {
-  ### {from => (file|string), num => 1, alpha => 1, output=> file}
+  ### { from => (file|string),
+  ###    num => 1,
+  ###  alpha => 1,
+  ### output => file,
+  ### ignorexml => 1,
+  ### ignorecase => 1}
 
-  my %opt = (from => 'file');
+  my %opt = (from => 'file', ignorecase => 0, ignorexml => 0);
   %opt = (%opt , %{shift(@_)}) if ref($_[0]) eq "HASH";
 
   local $\ = "\n";                    # set output record separator
@@ -92,6 +99,8 @@ sub oco {
   if ($opt{from} eq 'string') {
     my (@str) = (@_);
     for (@str) {
+      $_ = lc if $opt{ignorecase};
+      s/<[^>]+>//g if $opt{ignorexml};
       for (/($A+(?:['-]$A+)*|$P)/g) { $oco{$_}++; }
     }
   } else {
@@ -99,6 +108,8 @@ sub oco {
     for(@file) {
       open F,"< $_" or die "cant open $_: $!";
       while (<F>) {
+	$_ = lc if $opt{ignorecase};
+      s/<[^>]+>//g if $opt{ignorexml};
         for (/($A+(?:['-]$A+)*|$P)/g) { $oco{$_}++; }
       }
       close F;
@@ -136,261 +147,6 @@ sub oco {
   }
 }
 
-sub forPN{
-  ## opt:  in=> inputfile(sdtin), out => file(stdout)
-  my %opt = (sep => "", t => "normal" );
-
-  %opt = (%opt , %{shift(@_)}) if ref($_[0]) eq "HASH";
-
-  my $f=shift;
-  my $m="\x01";
-  my $f1;
-  my $old;
-  my $F1 ;
-
-  local $/ = $opt{sep};  # input record separator=1 or more empty lines
-
-  if (defined $opt{in}) {
-    open $F1, "$opt{in}" or die "cant open $opt{in}\n";
-  } else {
-    $F1=*STDIN;
-  }
-
-  if (defined $opt{out}) {
-    open F, ">$opt{out}" or die "cant create $opt{out}\n";
-    $old = select(F);
-  }
-
-  die "invalid parameter to 'forPN'" unless ref($f) eq "CODE";
-
-  if ($opt{t} eq "double") {
-    $f1 = shift;
-    die "invalid parameter ". ref($f1) unless ref($f1) eq "CODE";
-  }
-
-  while (<$F1>) {
-    my $ctx = $_;
-    if ($opt{t} eq "double") {
-
-      s{($np)}{$m($1$m)}g;
-      s{(^\s*|[-]\s+|[.!?]\s*)$m\(($np)$m\)}{
-	my ($aux1,$aux2,$aux3)= ($1,$2, &{$f1}($2,$ctx));
-	if   (defined($aux3)){$aux1 . $aux3}
-	else                 {$aux1 . _tryright($aux2)} }ge;
-      s{$m\(($np)$m\)}{   &{$f }($1,$ctx) }ge;
-
-    } else {
-      s{(\w+\s+|[\«\»,:()'`"]\s*)($np)}{$1 . &{$f }($2,$ctx) }ge;
-    }
-    print;
-  }
-  close $F1 if $opt{in};
-  if (defined $opt{out}) {
-    select $old;
-    close F;
-  }
-}
-
-sub _tryright{
-  my $a = shift;
-  return $a unless $a =~ /(\w+)/;
-  my $m = "\x01";
-  my ($w,$r) = ($1,$');
-  $r =~ s{($np)}{$m($1$m)}g;
-  return "$w$r";
-}
-
-
-sub forPNstring {
-  my $f = shift;
-  die "invalid parameter to 'forPNstring': function expected" unless ref($f) eq "CODE";
-  my $text = shift;
-  my $sep = shift || "\n";
-  my $r = '';
-  for (split(/$sep/,$text)) {
-    my $ctx = $_;
-    s/(\w+\s+|[\«\»,()'`i"]\s*)($np)/$1 . &{$f}($2,$ctx)/ge       ;
-    $r .= "$_$sep";
-  }
-  return $r;
-}
-
-sub printPNstring{
-  my $text = shift;
-  my %opt = ();
-
-  if   (ref($text) eq "HASH") { %opt = %$text        ; $text = shift; }
-  elsif(ref($text) eq "ARRAY"){ @opt{@$text} = @$text; $text = shift; }
-
-  my (%profissao, %names, %namesduv);
-
-  for ($text) {
-    chop;
-    s/\n/ /g;
-    for (m/[.?!:;"]\s+($np1\s+$np)/gxs)  { $namesduv{$_}++ }
-    for (m![)>(]\s*($np1\s+$np)!gxs)     { $namesduv{$_}++ }
-    for (m/(?:[\w\«\»,]\s+)($np)/gxs)    { $names{$_}++ }
-    if ($opt{em}) {
-      for (/$em\s+($np)/g) { $gnames{$_}++ }
-    }
-    if ($opt{prof}) {
-      while(/\b($prof)\s+(?:(?:$sep1)\s+)?($np)/g)
-	{ $profissao{$2} = $1 }
-      while(/(?:[\w\«\»,]\s+|[(])($np),\s*(?:(?:$sep2)\s+)?($prof)/g)
-	{ $profissao{$1} = $2 }
-    }
-  }
-
-  # tratamento dos nomes "duvidosos" = Nome prop no inicio duma frase
-  #
-
-  for (keys %namesduv) {
-    if (/^(\w+)/ && $vazia{lc($1)}) { #exemplo "Como Jose Manuel"
-      s/^\w+\s*//;                    # retira-se a 1.a palavra
-      $names{$_}++
-    } else { 
-      $names{$_}++
-    }
-  }
-
-  for (keys %names) {
-    if (/^(\w+)/ && $vazia{lc($1)}) {  #exemplo "Como Jose Manuel"
-      my $ant = $_;
-      s/^\w+\s*//;                     # retira-se a 1.a palavra
-      $names{$_} += $names{$ant};
-      delete $names{$ant}
-    }
-  }
-
-  if ($opt{oco}) {
-    for (sort {$names{$b} <=> $names{$a}} keys %names ) {
-      printf("%60s - %d\n", $_ ,$names{$_});
-    }
-  } else {
-    if ($opt{comp}) {
-      my @l = sort compara keys %names;
-      compacta(@l)
-    } else {
-      for (sort compara keys %names ) {
-	printf("%60s - %d\n", $_ ,$names{$_});
-      }
-    }
-    if ($opt{prof}) {
-      print "\nProfissões\n";
-      for (keys %profissao) {
-	print "$_ -- $profissao{$_}"
-      }
-    }
-    if ($opt{em}) {
-      print "\nGeograficos\n";
-      for (sort compara keys %gnames ) {
-	printf("%60s - %d\n", $_ ,$gnames{$_})
-      }
-    }
-  }
-}
-
-sub getPN {
-  local $/ = "";           # input record separator=1 or more empty lines
-
-  my %opt;
-  @opt{@_} = @_;
-  my (%profissao, %names, %namesduv);
-
-  while (<>) {
-    chop;
-    s/\n/ /g;
-    for (/[.?!:;"]\s+($np1\s+$np)/g)     { $namesduv{$_}++;}
-    for (/[)>(]\s*($np1\s+$np)/g)        { $namesduv{$_}++;}
-    for (/(?:[\w\«\»,]\s+)($np)/g)       { $names{$_}++;}
-    if ($opt{em}) {
-      for (/$em\s+($np)/g) { $gnames{$_}++;}}
-    if ($opt{prof}) {
-       while(/\b($prof)\s+(?:(?:$sep1)\s+)?($np)/g)
-	 { $profissao{$2} = $1 }
-       while(/(?:[\w\«\»,]\s+|[(])($np),\s*(?:(?:$sep2)\s+)?($prof)/g)
-	 { $profissao{$1} = $2 }
-     }
-  }
-
-  # tratamento dos nomes "duvidosos" = Nome prop no inicio duma frase
-  #
-
-  for (keys %namesduv) {
-    if(/^(\w+)/ && $vazia{lc($1)}) {  # exemplo "Como Jose Manuel"
-      s/^\w+\s*//;                    # retira-se a 1.a palavra
-      $names{$_}++
-    } else {
-      $names{$_}++
-    }
-  }
-  return (%names)
-}
-
-sub printPN{
-  local $/ = "";           # input record separator=1 or more empty lines
-
-  my %opt;
-  @opt{@_} = @_;
-  my (%profissao, %names, %namesduv);
-
-  while (<>) {
-    chop;
-    s/\n/ /g;
-    for (/[.?!:;"]\s+($np1\s+$np)/g)     { $namesduv{$_}++ }
-    for (/[)>(]\s*($np1\s+$np)/g)        { $namesduv{$_}++ }
-    for (/(?:[\w\«\»,]\s+)($np)/g)       { $names{$_}++ }
-    if ($opt{em}) {
-      for (/$em\s+($np)/g) { $gnames{$_}++ }
-    }
-    if ($opt{prof}) {
-       while(/\b($prof)\s+(?:(?:$sep1)\s+)?($np)/g)
-	 { $profissao{$2} = $1 }
-       while(/(?:[\w\«\»,]\s+|[(])($np),\s*(?:(?:$sep2)\s+)?($prof)/g)
-	 { $profissao{$1} = $2 }
-     }
-  }
-
-  # tratamento dos nomes "duvidosos" = Nome prop no inicio duma frase
-  #
-
-  for (keys %namesduv){
-    if(/^(\w+)/ && $vazia{lc($1)} )   #exemplo "Como Jose Manuel"
-      {s/^\w+\s*//;                  # retira-se a 1.a palavra
-       $names{$_}++;}
-    else
-      { $names{$_}++;}
-  }
-
-  ##### Não sei bem se isto serve...
-
-  for (keys %names){
-    if(/^(\w+)/ && $vazia{lc($1)} )   #exemplo "Como Jose Manuel"
-      { my $ant = $_;
-        s/^\w+\s*//;                  # retira-se a 1.a palavra
-        $names{$_}+=$names{$ant};
-        delete $names{$ant};}
-  }
-
-  if($opt{oco}){
-    for (sort {$names{$b} <=> $names{$a}} keys %names )
-      {printf("%6d - %s\n",$names{$_}, $_ );}
-  }
-  else
-    {
-      if($opt{comp}){my @l = sort compara keys %names;
-		     compacta(@l); }
-      else{for (sort compara keys %names )
-	     {printf("%60s - %d\n", $_ ,$names{$_});} }
-
-      if($opt{prof}){print "\nProfissões\n";
-		     for (keys %profissao){print "$_ -- $profissao{$_}";} }
-
-      if($opt{em}){print "\nGeograficos\n";
-		   for (sort compara keys %gnames )
-		     {printf("%60s - %d\n", $_ ,$gnames{$_});} }
-  }
-}
 
 sub accent{
   local $/ = "";           # input record separator=1 or more empty lines
@@ -477,17 +233,19 @@ my $terminador='([.?!;:]+[»]?|<[pP]\b.*?>|<br>)';
 my $protect = '
        \#n\d+
     |  \w+\'\w+
-    |  [\w_.-]+ \@ [\w_.-]+\w                    # emails
-    |  \w+\.[ºª]                                 # ordinals
-    |  <[^>]*>                                   # marcup XML SGML
-    |  \d+(?:\.\d+)+                             # numbers
-    |  \d+\:\d+                                  # the time
-    |  ((https?|ftp|gopher)://|www)[\w_./~-]+\w  # urls
-    |  \w+(-\w+)+                                # dá-lo-à
+    |  [\w_.-]+ \@ [\w_.-]+\w                     # emails
+    |  \w+\.[ºª]                                  # ordinals
+    |  <[^>]*>                                    # marcup XML SGML
+    |  \d+(?:\.\d+)+                              # numbers
+    |  \d+\:\d+                                   # the time
+    |  (?:\&\w+\;)                                # entidades XML HTML
+    |  ((https?|ftp|gopher)://|www)[\w_./~:-]+\w  # urls
+    |  \w+(-\w+)+                                 # dá-lo-à
 ';
 
 my $abrev = join '|', qw( srt?a? dra? [A-Z] etc exa? jr profs? arq av estr?
-			  et al vol no eng tv lgo pr Oliv ig mrs? min rep );
+			  et al vol no eng tv lgo pr Oliv ig mrs? min rep 
+  );
 
 sub setabrev{
   $abrev = join '|' , @_;
@@ -627,15 +385,6 @@ Lingua::PT::PLN - Perl extension for NLP of the Portuguese Language
   %o = oco("file");
   oco({num=>1,output=>"outfile"},"file");
 
-  printPN(@options);
-  printPNstring({ %options... } ,$textstrint);
-  printPNstring([ @options... ] ,$textstrint);
-
-  forPN( sub{my ($pn, $contex)=@_;... } ) ;
-  forPN( {t=>"double"}, sub{my ($pn, $contex)=@_;... }, sub{...} ) ;
-
-  forPNstring(sub{my ($pn, $contex)=@_;... } ,$textstring, regsep) ;
-
   $st = syllable($phrase);
   $s = accent($phrase);
   $s = wordaccent($word);
@@ -706,39 +455,6 @@ Examples:
   %oc = oco( {from=>"string"},"text in a string")
   # use a string as input
   # return a hash with the occurrences
-
-=head2 getPN
-
-=head2 C<forPN( $funref )>
-
-Substitutes all C<propername> by C<funref(propername)> in STDIN and sends
-output to STDOUT
-
-Opcionally you can pass C<{t => "full"}> as first parameter to obtain names
-after "."
-
-   forPN({in=> inputfile(sdtin), out => file(stdout)}, sub{...})
-   forPN({sep=>"\n", t=>"normal"}, sub{...})
-   forPN({sep=>'', t=>"double"}, sub{...}, sub{...})
-
-
-=head2 C<forPNstring( $funref, "textstring" [, regSeparator] )>
-
-Substitutes all C<propername> by C<funref(propername)> in the text string.
-
-=head2 C<printPN>
-
-   printPN("oco")
-
-  printPN  - extrai os nomes próprios dum texto.
-   -comp    junta certos nomes: Fermat + Pierre de Fermat = (Pierre de) Fermat
-   -prof
-   -e       "Sebastiao e Silva" "e" como pertencente a PN
-   -em      "em Famalicão" como pertencente a PN
-
-=head2 C<printPNstring(options)>
-
-   printPNstring("oco")
 
 =head2 C<syllable>
 

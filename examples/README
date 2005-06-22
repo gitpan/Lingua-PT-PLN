@@ -16,13 +16,3 @@ oco            -- exemplos de uso da função oco para calcular o número
                    ./oco exemplo
                   que criará
                    exemplo.out1 e exemplo.out2
-
-printNP        -- imprime os nomes próprios e sua contagem
-
-refnp          -- Exemplo de uso da função fornp para colocar uma etiqueta
-  "rev" com um tipo seleccionável via menu e que no final cria também uma
-  tabela NP -> tipo chamada "ref_dict"
-
-ucNP           -- transforma cada NP em tudo maiúsculas
-
-tagPnWithJspell -- mini marcador de entidades mencionadas com base tagPnTable
