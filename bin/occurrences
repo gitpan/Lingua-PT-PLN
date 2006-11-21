@@ -1,11 +1,15 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -w -s
 
 use Lingua::PT::PLN;
 
+our($log);
+
 my $file = shift;
 
+my %ops=();
+$ops{log}=$log if $log;
 
-my %o = oco($file);
+my %o = oco({%ops},$file);
 
 for (sort { $o{$b}<=>$o{$a} } keys %o) {
   printf("%20s %d\n",$_,$o{$_});

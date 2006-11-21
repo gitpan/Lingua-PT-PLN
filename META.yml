@@ -1,10 +1,11 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Lingua-PT-PLN
-version:      0.11
+version:      0.12
 version_from: PLN.pm
 installdirs:  site
 requires:
+    Lingua::PT::PLNbase:           0.17
 
 distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+generated_by: ExtUtils::MakeMaker version 6.30

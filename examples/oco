@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl 
 
 use Lingua::PT::PLN;
 use locale;
@@ -19,6 +19,13 @@ oco({
     },
     $filename);
 
+# cria um ficheiro ordenado por ocorrências
+oco({
+     output => "$filename.out3",
+     log    => 1,
+     num    => 1
+    },
+    $filename);
 # imprime a lista de palavras ordenadas
 my %oc = (oco({}, $filename));
 print join("/",(sort keys %oc));

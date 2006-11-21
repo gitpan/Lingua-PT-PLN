@@ -1,6 +1,6 @@
 # -*- cperl -*-
 
-use Test::More tests => 11;
+use Test::More tests => 12;
 
 use POSIX qw(locale_h);
 setlocale(LC_CTYPE, "pt_PT");
@@ -11,7 +11,7 @@ use Lingua::PT::PLN;
 $a = 'à';
 
 SKIP: {
-  skip "not a good locale", 11 unless $a =~ m!^\w$!;
+  skip "not a good locale", 12 unless $a =~ m!^\w$!;
 
 
   $/ = "\n\n";

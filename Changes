@@ -1,5 +1,9 @@
 Revision history for Perl extension Lingua::PT::PLN.
 
+0.12  Tue Nov 21 12:51:01 2006
+	- removed sentences and tokenization functions to Lingua::PT::PLNbase
+	- Added Lingua::PT::PLNbase functions as export functions (yuck)
+
 0.11  Wed Jun 22 11:24:00 2005
 	- Added a quick script to cound occurrences. Need more work
 	- Added 'ignorexml' to ocurrence counter;
