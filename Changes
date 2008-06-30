@@ -1,5 +1,8 @@
 Revision history for Perl extension Lingua::PT::PLN.
 
+0.13  Mon Jun 30 12:51:01 2008
+	- Bug fixed in function Syllabs ans accent
+
 0.12  Tue Nov 21 12:51:01 2006
 	- removed sentences and tokenization functions to Lingua::PT::PLNbase
 	- Added Lingua::PT::PLNbase functions as export functions (yuck)

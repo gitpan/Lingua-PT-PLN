@@ -10,19 +10,20 @@ our @ISA = qw(Exporter AutoLoader);
 our @EXPORT = 
   (@Lingua::PT::PLNbase::EXPORT,
    qw(syllable accent wordaccent oco));
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 use POSIX qw(locale_h);
 setlocale(&POSIX::LC_ALL, "pt_PT");
 use locale;
 
-our ($consoante, $vogal, %names);
+our ($consoante, $vogal, $acento, %names);
 
 my ($lmax,$maxlog,$magicF);
 
 BEGIN {
-  $consoante='[bcçdfghjklmñnpqrstvwyxz]';
-  $vogal='[áéíóúâêôãõàèaeiouüöäë]';
+  $consoante=qr{[bcçdfghjklmñnpqrstvwyxz]}i;
+  $vogal=qr{[áéíóúâêôãõàèaeiouüöäë]}i;
+  $acento=qr{[áéíóúâêôãõüöäë]}i;
   setlocale(&POSIX::LC_ALL, "pt_PT");
 
   use POSIX;
@@ -117,6 +118,7 @@ sub oco {
   }
 }
 
+### syllabs, and accents
 
 sub accent {
   local $/ = "";           # input record separator=1 or more empty lines
@@ -128,15 +130,14 @@ sub accent {
 sub wordaccent {
   my $p = syllable(shift);
   for ($p) {
-    s/(\w*[áéíóúôâêãõ])/"$1/        or  # word with an accent character
-      s/(\w*)([ua])(ir)$/$1$2|"$3/  or  # word ending with air uir
-	s/(\w*([zlr]|[iu]s?))$/"$1/ or  # word ending with z l r i u is us
-	  s/(\w+\|\w+)$/"$1/        or  # accent in 2 syllable frm the end
-	    s/(\w)/"$1/;                # accent in the only syllable
+    s/(\w*$acento)/"$1/i             or  # word with an accent character
+      s/(\w*)([ua])(ir)$/$1$2|"$3/i  or  # word ending with air uir
+      s/(\w*([zlr]|[iu]s?))$/"$1/i   or  # word ending with z l r i u is us
+      s/(\w+\|\w+)$/"$1/             or  # accent in 2 syllable frm the end
+      s/(\w)/"$1/;                       # accent in the only syllable
 
-    s/"(($consoante)*($vogal|[yw]))/$1:/ ;
-    s/"qu:($vogal|[yw])/qu$1:/ ;
-    s/:([áéíóúôâêãõ])/$1:/  ;
+    s/"(([qg]u|$consoante)*($vogal|[yw]))/$1:/i ; # accent in the 1.st vowel
+    s/:($acento)/$1:/i  ;                         # mv accent after accents
     s/"//g;
 
   }
@@ -146,9 +147,10 @@ sub wordaccent {
 my %syl = (
 	   20 => " -.!?:;",
 	   10 => "bçdfgjkpqtv",
-	   7 => "sc",
-	   6 => "m",
-	   5 => "rnlzx",
+	   8 => "sc",
+	   7 => "m",
+	   6 => "lzx",
+	   5 => "nr",
 	   4 => "h",
 	   3 => "wy",
 	   2 => "eaoáéíóúôâêûàãõäëïöü",
@@ -156,10 +158,10 @@ my %syl = (
 	   breakpair => "ie|ia|io|ee|oo|oa|sl|sm|sn|sc|rn",
 	  );
 
-my %sylpri = ();
+my %spri = ();
 
 for my $pri (grep(/\d/, keys %syl)){
-  for(split(//,$syl{$pri})) { $sylpri{$_} = $pri}}
+  for(split(//,$syl{$pri})) { $spri{$_} = $pri}}
 
 (my $sylseppair= $syl{breakpair}) =~ s/(\w)(\w)/(\?<=($1))(\?=($2))/g;
 
@@ -169,10 +171,10 @@ sub syllable{
   for($p){
     s/$sylseppair/|/g;
     s{(\w)(?=(\w)(\w))}
-      { if(     $sylpri{lc($1)} < $sylpri{lc($2)}
-		&& $sylpri{lc($2)} >= $sylpri{lc($3)} ) {"$1|"}
-	else{$1}
+      {if($spri{lc($1)}<$spri{lc($2)} && $spri{lc($2)}>=$spri{lc($3)}){"$1|"}
+       else{$1}
       }ge;
+    s{((?:qu|gu|[^qg])$vogal|[aeio])($acento)}{$1|$2};
   }
   $p
 }
@@ -263,9 +265,10 @@ Lingua::PT::PLN - Perl extension for NLP of the Portuguese Language
   %o = oco("file");
   oco({num=>1,output=>"outfile"},"file");
 
-  $st = syllable($phrase);
-  $s = accent($phrase);
-  $s = wordaccent($word);
+  $p = accent($phrase);        ## mark word accent of all words
+
+  $w = syllable($word);
+  $w = wordaccent($word);
 
 =head1 DESCRIPTION
 
@@ -348,16 +351,16 @@ Examples:
 
 =head2 C<syllable>
 
-  my $sylls = syllable( $phrase )
+  my $sylls = syllable( $word )
 
-Returns the phrase with the syllables separated by "|"
+Returns the word with the syllables separated by "|"
 
 =head2 accent
 
   my $accent = accent( $phrase )
 
 Returns the phrase with the syllables separated by "|" and accents marked with
-the charater ".
+the charater ":".
 
 =head2 wordaccent
 
