@@ -10,7 +10,7 @@ our @ISA = qw(Exporter AutoLoader);
 our @EXPORT = 
   (@Lingua::PT::PLNbase::EXPORT,
    qw(syllable accent wordaccent oco));
-our $VERSION = '0.14';
+our $VERSION = '0.15';
 
 use POSIX qw(locale_h);
 setlocale(&POSIX::LC_ALL, "pt_PT");
@@ -155,7 +155,9 @@ my %syl = (
    3 => "wy",
    2 => "eaoáéíóúôâêûàãõäëïöü",
    1 => "iu",
-   breakpair => "ie|ia|io|ee|oo|oa|sl|sm|sn|sc|rn|bc|lr|bd|bj|pt|pc|dj|pç|ln",
+   breakpair =>
+      #"ie|ia|io|ee|oo|oa|sl|sm|sn|sc|sr|rn|bc|lr|lz|bd|bj|bg|bq|bt|bv|pt|pc|dj|pç|ln|nr|mn|tp|bf|bp",
+      "sl|sm|sn|sc|sr|rn|bc|lr|lz|bd|bj|bg|bq|bt|bv|pt|pc|dj|pç|ln|nr|mn|tp|bf|bp",
   );
 
 my %spri = ();
@@ -174,8 +176,16 @@ sub syllable{
       {if($spri{lc($1)}<$spri{lc($2)} && $spri{lc($2)}>=$spri{lc($3)}){"$1|"}
        else{$1}
       }ge;
-    s{((?:qu|gu|[^qg])$vogal|[aeio])($acento)}{$1|$2}i;
+
+    s{([a])(i[ru])}{$1|$2}i;              #ditongos and friends
+    s{([ioeê])([aoe])}{$1|$2}ig;
+    s{u(ai|ou)}{u|$1}i;
+    s{([^qg]u)(ei|iu|ir|$acento)}{$1|$2}i;
+    s{([aeio])($acento)}{$1|$2}i;
+    s{([íúô])($vogal)}{$1|$2}i;
+
     s{([qg]u)\|([ei])}{$1$2}i;
+    s{^($consoante)\|}{$1}i;
     s{êm$}{ê|_nhem}i;
   }
   $p
