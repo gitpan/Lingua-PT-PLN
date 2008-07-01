@@ -10,7 +10,7 @@ our @ISA = qw(Exporter AutoLoader);
 our @EXPORT = 
   (@Lingua::PT::PLNbase::EXPORT,
    qw(syllable accent wordaccent oco));
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 use POSIX qw(locale_h);
 setlocale(&POSIX::LC_ALL, "pt_PT");
@@ -145,18 +145,18 @@ sub wordaccent {
 }
 
 my %syl = (
-	   20 => " -.!?:;",
-	   10 => "bçdfgjkpqtv",
-	   8 => "sc",
-	   7 => "m",
-	   6 => "lzx",
-	   5 => "nr",
-	   4 => "h",
-	   3 => "wy",
-	   2 => "eaoáéíóúôâêûàãõäëïöü",
-	   1 => "iu",
-	   breakpair => "ie|ia|io|ee|oo|oa|sl|sm|sn|sc|rn",
-	  );
+   20 => " -.!?:;",
+   10 => "bçdfgjkpqtv",
+   8 => "sc",
+   7 => "m",
+   6 => "lzx",
+   5 => "nr",
+   4 => "h",
+   3 => "wy",
+   2 => "eaoáéíóúôâêûàãõäëïöü",
+   1 => "iu",
+   breakpair => "ie|ia|io|ee|oo|oa|sl|sm|sn|sc|rn|bc|lr|bd|bj|pt|pc|dj|pç|ln",
+  );
 
 my %spri = ();
 
@@ -174,7 +174,9 @@ sub syllable{
       {if($spri{lc($1)}<$spri{lc($2)} && $spri{lc($2)}>=$spri{lc($3)}){"$1|"}
        else{$1}
       }ge;
-    s{((?:qu|gu|[^qg])$vogal|[aeio])($acento)}{$1|$2};
+    s{((?:qu|gu|[^qg])$vogal|[aeio])($acento)}{$1|$2}i;
+    s{([qg]u)\|([ei])}{$1$2}i;
+    s{êm$}{ê|_nhem}i;
   }
   $p
 }

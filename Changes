@@ -1,5 +1,8 @@
 Revision history for Perl extension Lingua::PT::PLN.
 
+0.14  Mon Jul 1 12:11:01 2008
+	- Minor bug fixed in function Syllabs
+
 0.13  Mon Jun 30 12:51:01 2008
 	- Bug fixed in function Syllabs ans accent
 
