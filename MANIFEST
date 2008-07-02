@@ -2,7 +2,6 @@ Changes
 MANIFEST
 Makefile.PL
 PLN.pm
-PLN/tokenizer.pm
 README
 examples/README
 examples/divideFrases

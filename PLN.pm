@@ -10,7 +10,7 @@ our @ISA = qw(Exporter AutoLoader);
 our @EXPORT = 
   (@Lingua::PT::PLNbase::EXPORT,
    qw(syllable accent wordaccent oco));
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 use POSIX qw(locale_h);
 setlocale(&POSIX::LC_ALL, "pt_PT");
@@ -128,17 +128,17 @@ sub accent {
 }
 
 sub wordaccent {
-  my $p = syllable(shift);
+  my $p = syllable($_[0]);
   for ($p) {
-    s/(\w*$acento)/"$1/i             or  # word with an accent character
-      s/(\w*)([ua])(ir)$/$1$2|"$3/i  or  # word ending with air uir
-      s/(\w*([zlr]|[iu]s?))$/"$1/i   or  # word ending with z l r i u is us
-      s/(\w+\|\w+)$/"$1/             or  # accent in 2 syllable frm the end
-      s/(\w)/"$1/;                       # accent in the only syllable
+    s{(\w*$acento)}{"$1}i             or  # word with an accent character
+#      s{(\w*)([ua])(ir)$}{$1$2|"$3}i  or  # word ending with air uir
+      s{(\w*([zlr]|[iu]s?))$}{"$1}i   or  # word ending with z l r i u is us
+      s{(\w+\|\w+)$}{"$1}             or  # accent in 2 syllable frm the end
+      s{(\w)}{"$1};                       # accent in the only syllable
 
-    s/"(([qg]u|$consoante)*($vogal|[yw]))/$1:/i ; # accent in the 1.st vowel
-    s/:($acento)/$1:/i  ;                         # mv accent after accents
-    s/"//g;
+    s{"(([qg]u|$consoante)*($vogal|[yw]))}{$1:}i ; # accent in the 1.st vowel
+    s{:($acento)}{$1:}i  ;                         # mv accent after accents
+    s{"}{}g;
 
   }
   $p
@@ -183,8 +183,8 @@ sub syllable{
     s{([^qg]u)(ei|iu|ir|$acento)}{$1|$2}i;
     s{([aeio])($acento)}{$1|$2}i;
     s{([íúô])($vogal)}{$1|$2}i;
-
-    s{([qg]u)\|([ei])}{$1$2}i;
+    
+    s{([qg]u)\|([eií])}{$1$2}i;
     s{^($consoante)\|}{$1}i;
     s{êm$}{ê|_nhem}i;
   }
