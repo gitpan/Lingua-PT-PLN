@@ -4,7 +4,17 @@ use Lingua::PT::PLN;
 
 our($log);
 
-my $file = shift;
+my $file;
+my $dfile = 0;
+if (@ARGV) {
+	$file = shift;
+} else {
+	$file = "/tmp/_$$";
+	open F, ">$file" or die "Can't create temporary file: $!";
+	print F while <>;
+	close F;
+	$dfile = 1;
+}
 
 my %ops=();
 $ops{log}=$log if $log;
@@ -14,3 +24,35 @@ my %o = oco({%ops},$file);
 for (sort { $o{$b}<=>$o{$a} } keys %o) {
   printf("%20s %d\n",$_,$o{$_});
 }
+
+unlink $file if $dfile;
+
+
+=head1 NAME
+
+
+occurrences - Calculate a histogram of word occurrences count
+
+=head1 SYNOPSIS
+
+   occurrences <file>
+
+=head1 DESCRIPTION
+
+This script count different words and prints a final report ordered by
+word count.
+
+=head1 SEE ALSO
+
+Lingua::PT::PLN
+
+=head1 AUTHOR
+
+Alberto Manuel Brandão Simões, E<lt>ambs@cpan.orgE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2008 by Projecto Natura
+
+=cut
+

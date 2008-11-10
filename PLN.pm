@@ -10,7 +10,7 @@ our @ISA = qw(Exporter AutoLoader);
 our @EXPORT = 
   (@Lingua::PT::PLNbase::EXPORT,
    qw(syllable accent wordaccent oco));
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 use POSIX qw(locale_h);
 setlocale(&POSIX::LC_ALL, "pt_PT");
