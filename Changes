@@ -1,8 +1,13 @@
 Revision history for Perl extension Lingua::PT::PLN.
 
+0.18  Fri Aug 19, 2011
+        - add Abstract to META
+        - occurrences script now handles utf8 encoding.
+        - fixed occurrences script POD.
+
 0.17  Mon Nov 10, 2008
-   - occurrences now can read from stdin.
-   - Added basic POD for occurrences
+        - occurrences now can read from stdin.
+        - Added basic POD for occurrences.
 
 0.16  Mon Jul 3, 2008
 	- module tokeniser removed; 

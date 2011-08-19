@@ -1,19 +1,22 @@
---- #YAML:1.0
-name:               Lingua-PT-PLN
-version:            0.17
-abstract:           ~
-author:  []
-license:            unknown
-distribution_type:  module
+---
+abstract: 'Perl extension for NLP of the Portuguese Language'
+author:
+  - unknown
+build_requires:
+  ExtUtils::MakeMaker: 0
 configure_requires:
-    ExtUtils::MakeMaker:  0
-requires:
-    Lingua::PT::PLNbase:  0.17
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.48
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.59, CPAN::Meta::Converter version 2.112150'
+license: unknown
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Lingua-PT-PLN
+no_index:
+  directory:
+    - t
+    - inc
+requires:
+  Lingua::PT::PLNbase: 0.17
+version: 0.18

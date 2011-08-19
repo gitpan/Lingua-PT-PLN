@@ -1,20 +1,27 @@
 package Lingua::PT::PLN;
-
 use strict;
 
 use Lingua::PT::PLNbase;
+use Lingua::PT::PLN::Words2Sampa;
 
 require Exporter;
 our @ISA = qw(Exporter AutoLoader);
 
 our @EXPORT = 
   (@Lingua::PT::PLNbase::EXPORT,
-   qw(syllable accent wordaccent oco));
-our $VERSION = '0.17';
+   qw(syllable accent wordaccent oco initPhon toPhon));
+our $VERSION = '0.18';
 
 use POSIX qw(locale_h);
 setlocale(&POSIX::LC_ALL, "pt_PT");
 use locale;
+
+# para transcrição fonética
+$INC{'Lingua/PT/PLN.pm'} =~ m!/PLN\.pm$!;
+our $ptpho = "$`/PLN/ptpho";
+our $naoacentuadas = "$`/PLN/nao_acentuadas";
+our $dic;
+our $no_accented;
 
 our ($consoante, $vogal, $acento, %names);
 
@@ -129,6 +136,7 @@ sub accent {
 
 sub wordaccent {
   my $p = syllable($_[0]);
+  my $flag = $_[1] or 0; # 0 (default) => use : after vowel; 1 => use " before syllable
   for ($p) {
     s{(\w*$acento)}{"$1}i             or  # word with an accent character
 #      s{(\w*)([ua])(ir)$}{$1$2|"$3}i  or  # word ending with air uir
@@ -136,9 +144,11 @@ sub wordaccent {
       s{(\w+\|\w+)$}{"$1}             or  # accent in 2 syllable frm the end
       s{(\w)}{"$1};                       # accent in the only syllable
 
-    s{"(([qg]u|$consoante)*($vogal|[yw]))}{$1:}i ; # accent in the 1.st vowel
-    s{:($acento)}{$1:}i  ;                         # mv accent after accents
-    s{"}{}g;
+    if(!$flag){
+      s{"(([qg]u|$consoante)*($vogal|[yw]))}{$1:}i; # accent in the 1.st vowel
+      s{:($acento)}{$1:}i;                         # mv accent after accents
+      s{"}{}g;
+    }
 
   }
   $p
@@ -157,7 +167,8 @@ my %syl = (
    1 => "iu",
    breakpair =>
       #"ie|ia|io|ee|oo|oa|sl|sm|sn|sc|sr|rn|bc|lr|lz|bd|bj|bg|bq|bt|bv|pt|pc|dj|pç|ln|nr|mn|tp|bf|bp",
-      "sl|sm|sn|sc|sr|rn|bc|lr|lz|bd|bj|bg|bq|bt|bv|pt|pc|dj|pç|ln|nr|mn|tp|bf|bp",
+      "sl|sm|sn|sc|sr|rn|bc|lr|lz|bd|bj|bg|bq|bt|bv|pt|pc|dj|pç|ln|nr|mn|tp|bf|bp|xc|sç|ss|rr",
+	# dígrafos que se separam sempre: xc, sç, ss, rr, sc.
   );
 
 my %spri = ();
@@ -177,18 +188,114 @@ sub syllable{
        else{$1}
       }ge;
 
-    s{([a])(i[ru])}{$1|$2}i;              #ditongos and friends
+    s{([a])(i[ru])}{$1|$2}i;		#ditongos and friends
     s{([ioeê])([aoe])}{$1|$2}ig;
-    s{u(ai|ou)}{u|$1}i;
-    s{([^qg]u)(ei|iu|ir|$acento)}{$1|$2}i;
+    s{u(ai|ou|a)}{u|$1}i;
+    s{([^qg]u)(ei|iu|ir|$acento|e)}{$1|$2}i;	# continu|e
+    s{([^q]u)(o)}{$1|$2}i;			# quo|ta; vácu|o
     s{([aeio])($acento)}{$1|$2}i;
     s{([íúô])($vogal)}{$1|$2}i;
-    
+    s{^a(o|e)}{a|$1}i;			# a|onde; a|orta; a|eródromo
+
     s{([qg]u)\|([eií])}{$1$2}i;
     s{^($consoante)\|}{$1}i;
     s{êm$}{ê|_nhem}i;
   }
   $p
+}
+
+# carregar ficheiros necessários para transcrição fonética
+sub initPhon
+{
+	our $dic = carregaDicionario($ptpho);
+	our $no_accented = chargeNoAccented($naoacentuadas);
+}
+
+# transcrição fonética
+sub toPhon {
+  my $word = shift;
+  my $prefix = undef;
+  my $res = undef;
+  $word = lc($word);
+
+  unless ($word =~ /,/) {
+    $res = gfdict($word,$dic); #$dic->{$word};
+    #             $res = "$dic->{$1}S" if(!$res &&  $word =~ /(.*)s$/ );
+    
+    unless ($res || length($word)<3) {
+
+      $prefix = $word;
+      do {
+	$prefix =~ s{\*$}{}g;
+	$prefix =~ s{.$}{*};
+	$res = $dic->{$prefix};
+      } until ($res || $prefix =~ m!^\w\*! );
+    }
+
+    if (defined($prefix)) {
+      if ($res) {
+	$prefix =~ s{\*$}{}g;
+	$res    =~ s{\*$}{}g;
+	$word =~ s/^$prefix/$res/;
+	undef($res);
+      }
+    }
+  }
+  if ($res) {
+    if ($res =~ /^!/) {
+      $res = toPhon2($');
+    }
+  } elsif ($no_accented->{$word}) {
+    $res = Lingua::PT::PLN::Words2Sampa::run($word, 0); # debug = 0
+  } else {
+    $res = toPhon2($word);
+  }
+  return $res;
+}
+
+sub toPhon2
+{
+  my $word = shift;
+  my $t = wordaccent($word, 1);
+  $t =~ s/\|//g;
+  return Lingua::PT::PLN::Words2Sampa::run($t, 0); # debug = 0
+}
+
+sub chargeNoAccented {
+  my $file = shift;
+  my $dic;
+  open F, $file or die ("cannot open dictionary file: $!");
+  while(<F>) {
+    chomp;
+    $dic->{$_}++;
+  }
+  close F;
+  return $dic;
+}
+
+sub carregaDicionario {
+  my $file = shift;
+  my $dic;
+  open F, $file or die ("cannot open dicionary file: $!");
+  while(<F>) {
+    chomp;
+    my ($a,$b) = split /=/;
+    $dic->{$a}=$b;
+  }
+  close F;
+  return $dic;
+}
+
+sub gfdict{ 
+  my ($word,$dic) = @_;
+  return "" unless ($word =~ /\w/);
+  my $res = $dic->{$word};
+  unless($res){ $res = $dic->{$1} if( $word =~ /^(.*)s$/ );
+                return "" unless ($res);
+                if($res =~ /^!/) {$res .= "s"}
+                else             {$res .= "S"}
+  }
+  $res;
 }
 
 sub compara {
@@ -279,8 +386,12 @@ Lingua::PT::PLN - Perl extension for NLP of the Portuguese Language
 
   $p = accent($phrase);        ## mark word accent of all words
 
-  $w = syllable($word);
-  $w = wordaccent($word);
+  $w = syllable($word);		# get syllables
+  $w = wordaccent($word);	# get word accent with : after vowel (default)
+  $w = wordaccent($word, 1);	# get word accent with " before syllable (standard)
+
+  initPhon;			# initializes Phonetic dictionary (adds manual corrections)
+  $w = toPhon($word);		# get phonetic transcription
 
 =head1 DESCRIPTION
 
@@ -381,6 +492,18 @@ Retuns the word splited into syllables and with the accent character marked.
 =head2 compacta
 
 =head2 compara
+
+=head2 initPhon
+
+=head2 toPhon
+
+=head2 carregaDicionario
+
+=head2 chargeNoAccented
+
+=head2 gfdict
+
+=head2 toPhon2
 
 =head1 AUTHOR
 

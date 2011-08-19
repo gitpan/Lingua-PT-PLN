@@ -1,7 +1,10 @@
 Changes
 MANIFEST
 Makefile.PL
-PLN.pm
+lib/Lingua/PT/PLN.pm
+lib/Lingua/PT/PLN/nao_acentuadas
+lib/Lingua/PT/PLN/ptpho
+lib/Lingua/PT/PLN/Words2Sampa.pm
 README
 examples/README
 examples/divideFrases
@@ -22,3 +25,5 @@ t/pod-coverage.t
 t/pod.t
 META.yml                                 Module meta-data (added by MakeMaker)
 bin/occurrences
+t/01_wordaccent.t
+META.json                                Module JSON meta-data (added by MakeMaker)

@@ -2,7 +2,7 @@
 
 use Lingua::PT::PLN;
 
-our($log);
+our($log, $utf8);
 
 my $file;
 my $dfile = 0;
@@ -18,6 +18,9 @@ if (@ARGV) {
 
 my %ops=();
 $ops{log}=$log if $log;
+
+#encoding => utf8
+$ops{encoding} = 'utf8' if $utf8;
 
 my %o = oco({%ops},$file);
 
@@ -35,12 +38,26 @@ occurrences - Calculate a histogram of word occurrences count
 
 =head1 SYNOPSIS
 
-   occurrences <file>
+   occurrences [-utf8] [-log] <file>
 
 =head1 DESCRIPTION
 
 This script count different words and prints a final report ordered by
 word count.
+
+Supported options:
+
+=over 4
+
+=item C<-utf8>
+
+Input is in UTF-8.
+
+=item C<-log>
+
+Show occurrence counts in logarithmic scale.
+
+=back
 
 =head1 SEE ALSO
 
