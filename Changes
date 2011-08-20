@@ -1,5 +1,8 @@
 Revision history for Perl extension Lingua::PT::PLN.
 
+0.19  Sat Aug 20, 2011
+        - Require Text::RewriteRules
+
 0.18  Fri Aug 19, 2011
         - add Abstract to META
         - occurrences script now handles utf8 encoding.
