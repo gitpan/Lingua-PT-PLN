@@ -20,4 +20,4 @@ no_index:
 requires:
   Lingua::PT::PLNbase: 0.17
   Text::RewriteRules: 0.23
-version: 0.19
+version: 0.20

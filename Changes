@@ -1,5 +1,8 @@
 Revision history for Perl extension Lingua::PT::PLN.
 
+0.20  Tue Aug 23, 2011
+        - Skip some tests if locale doesn't know about accented chars
+
 0.19  Sat Aug 20, 2011
         - Require Text::RewriteRules
 

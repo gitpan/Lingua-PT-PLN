@@ -1,7 +1,15 @@
 # -*- cperl -*-
 
-use Test::More tests => 30;
+use Test::More;
 use Lingua::PT::PLN;
+
+use POSIX qw(locale_h);
+setlocale(&POSIX::LC_ALL, "pt_PT");
+use locale;
+
+plan skip_all => 'Locale not good enough' unless "ção" =~ /\w{3}/;
+
+plan tests => 30;
 
 is( syllable("olá")  , "o|lá"   ,"syllable");
 is( wordaccent("olá")  , "o|lá:"   ,"wordaccent");
