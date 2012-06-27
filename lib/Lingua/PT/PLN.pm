@@ -10,7 +10,8 @@ our @ISA = qw(Exporter AutoLoader);
 our @EXPORT = 
   (@Lingua::PT::PLNbase::EXPORT,
    qw(syllable accent wordaccent oco initPhon toPhon));
-our $VERSION = '0.20';
+
+our $VERSION = '0.21';
 
 use POSIX qw(locale_h);
 setlocale(&POSIX::LC_ALL, "pt_PT");
@@ -371,6 +372,7 @@ $lM='[A-ZÁÉÍÓÚÂÊÔÀÃÕÇÜÖÑ]';                      # letra Maiuscula
 $l1='[A-ZÁÉÍÓÚÂÊÔÀÃÕÇÜÖÑa-záéíóúâêôàãõçüöñ0-9]'; # letra e numero
 $c1='[^»a-záéíóúâêà,;?!)]';
 
+=encoding ISO-8859-1
 
 =head1 NAME
 

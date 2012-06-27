@@ -30,6 +30,7 @@ for (sort { $o{$b}<=>$o{$a} } keys %o) {
 
 unlink $file if $dfile;
 
+=encoding UTF-8
 
 =head1 NAME
 
